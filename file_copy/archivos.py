@@ -19,8 +19,7 @@ def main():
 
     while os.path.isfile(copia):
         copy_number += 1
-    
-    copia = original[1:-4] + "_copia_" + copy_number + ".txt"
+        copia = original[1:-4] + "_copia_" + copy_number + ".txt"
 
     if os.path.isfile(original):
         archivo = open(original, "r")
