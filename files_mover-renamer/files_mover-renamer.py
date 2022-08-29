@@ -8,6 +8,9 @@
 """
     Script to move files from diferent individual folders to the 
     main folder and rename them with their correspondant name.
+
+    Author:             Gus-Bonilla
+    Modification Date:  28/08/2022
 """
 
 
@@ -16,48 +19,87 @@ import os
 import shutil as sht
 
 
-def custom_filter(filter_function, elements, current_folder_path):
-    # Function to filter elements on an iterable based on a filter function
+def files_filter(elements_list, current_path, ext_to_look):
+    # Function to filter elements in an iterable, by looking for all 
+    # the files with the choossed file extention.
     
-    filtered_elements = list()
+    filtered_files = list()
 
-    for element in elements:
-        if pth.isfile('./{}/{}'.format(current_folder_path, element)):
-            filtered_elements.append(element)
+    for element in elements_list:
+        if pth.isfile('{}{}'.format(current_path, element)):
+            if element.endswith(ext_to_look):
+                filtered_files.append(element)
 
-    return filtered_elements
+    return filtered_files
 
+
+def check_folder(folder_path, folders_list, files_list, ext_to_look):
+    # Function to examine the content of a directory and and add its
+    # content to its correspondant list.
+
+    print('Checking folder:', folder_path)
+
+    folder_content = os.listdir(folder_path)
+    folders_in_folder = filter(pth.isdir, folder_content)
+    files_in_folder = files_filter(folder_content,
+                                  folder_path,
+                                  ext_to_look)
+
+    for folder in folders_in_folder:
+        folders_list.append('{}{}/'.format(folder_path, folder))
+
+    for file in files_in_folder:
+        files_list.append('{}{}'.format(folder_path, file))
+        
 
 def main():
     # Main function
 
-    extension_to_look = '.mkv'
-    files_default_name = 'Scissor Seven S1-CXX [HD-1080P]'
-    episode_number_idx_src = 16
-    episode_number_idx_dst = 18
-    
-    folders_list = os.listdir('.')
-    folders_list = filter(pth.isdir, folders_list)
+    ext_to_look = '.mkv'
+    files_default_name_beg = 'Scissor Seven S1-C'
+    files_default_name_end = ' [HD-1080P]'
+    episode_number_idx = -29 # Index of the char with the episode number
+    folders_list = list()
+    files_list = list()
+    folder_to_begin = './'
+    destination_folder = './'
 
-    for folder_name in folders_list:
-        print('Checking folder:', folder_name)
+    folders_list.append(folder_to_begin)
 
-        files_list = os.listdir('./{}/'.format(folder_name))
-        files_list = custom_filter(pth.isfile, files_list, folder_name)
+    while len(folders_list):
+        check_folder(folders_list.pop(), folders_list, files_list, ext_to_look)
 
-        for file_name in files_list:
-            print('\tChecking file:', file_name)
+    print('\n')
 
-            if file_name.endswith(extension_to_look):
-                files_default_name = files_default_name[ : episode_number_idx_dst] + file_name[episode_number_idx_src : episode_number_idx_src+2] + files_default_name[episode_number_idx_dst+2 : ]
-                
-                print('\t\tMoving file as:', files_default_name+extension_to_look)
+    for file in files_list:
+        copy_counter = 2
+        new_file_name = files_default_name_beg + file[episode_number_idx:episode_number_idx+2] + files_default_name_end
+        file_lready_existent = pth.isfile(destination_folder + new_file_name + ext_to_look)
 
-                sht.move('./{}/{}'.format(folder_name, file_name),
-                            './{}{}'.format(files_default_name, extension_to_look),
-                            copy_function=sht.copy2)
+        if file == destination_folder+new_file_name+ext_to_look:
+            continue
 
-    print('\nDONE :)')
+        while file_lready_existent:
+            new_file_name = new_file_name + ' - {}'.format(copy_counter)
+
+            if pth.isfile(destination_folder + new_file_name + ext_to_look):
+                chars_to_remove = -4
+                copy_counter_check = copy_counter
+
+                while copy_counter_check > 10:
+                    chars_to_remove -= 1
+                    copy_counter_check = copy_counter_check / 10
+
+                new_file_name = new_file_name[ : chars_to_remove]
+                copy_counter += 1
+            else:
+                file_lready_existent = False
+
+        print('\tMoving file: {}\n\n\t\tTo: {}{}{}\n'.format(file, destination_folder, new_file_name, ext_to_look))
+
+        sht.move(file, destination_folder+new_file_name+ext_to_look, copy_function=sht.copy2)
+
+    print('\n\tDONE :)')
 
 
 if __name__ == "__main__":
